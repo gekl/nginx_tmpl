@@ -1,0 +1,98 @@
+allow_lists:
+  - name: standart
+    hosts:
+      - 1.1.1.0/24
+      - 2.2.2.0/25
+  - name: vpn
+    hosts:
+      - 8.8.8.0/24
+      - 4.4.4.0/25
+#реализация nginx stream
+#stream {
+#  server {
+#    allow ....
+#    deny all; 
+#  }
+#  server { 
+#  }
+#}
+streams:
+  -
+    name: first-stream
+    allow:
+      - standart
+    hosts:
+      - host1.local
+    endpoint_port: 22
+    external_port: 2022
+
+#реализация nginx upstream
+#upstream some_name {
+#}
+upstream:
+  - name: kibana
+    server:
+      -
+        ip_host: kibana1.local
+        port: 5601
+      -
+        ip_host: kibana2.local
+        port: 5601
+      -
+        ip_host: kibana3.local
+        port: 5601
+servers:
+  - name: _
+    ssl_cert: "/usr/local/ssl/fullchain.pem"
+    ssl_cert_key: "/usr/local/ssl/privkey.pem"
+    port:
+      - 443 ssl
+    locations:
+      -
+        route: /
+        return:  404
+  - name: kibana.example.com
+    port:
+      - 443 ssl
+    locations:
+      -
+        route: /
+        allow:
+          - standart
+        proxy_pass: http://kibana
+        set_headers:
+          -
+            header: Host
+            value: $http_host
+          -
+            header: X-Real-IP
+            value: $remote_addr
+  - name: endpoint.example.com
+    port:
+      - 443 ssl
+    locations:
+      - 
+        route: /auth
+        allow:
+          - vpn
+        proxy_pass: http://some.endpoint.local
+        client_max_body_size: 0
+        gzip: 'off'
+        set_headers:
+          -
+            header: Host
+            value: $host
+      - 
+        route: /
+        proxy_pass: http://entry.endpoint.local
+        chunked_transfer_encoding: 'on'
+        set_headers:
+          -
+            header: Host
+            value: $host
+          -
+            header: X-Forwarded-For
+            value: $proxy_add_x_forwarded_for
+          -
+            header: X-Real-IP 
+            value: $remote_addr

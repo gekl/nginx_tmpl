@@ -1,0 +1,80 @@
+# {{ ansible_managed }}
+
+
+stream {
+{% for stream in streams  %}
+  server {
+    listen {{ stream.name}}:{{ stream.endpoint_port}} 
+{% for ip in allow_lists %}
+{% if 'standart' in ip.name %}
+    {% for item in ip.hosts %}
+allow {{ item }}
+    {% endfor %}{% endif %}{% endfor %}
+deny all;
+{% endfor %}
+{% for upstream in upstream  %}
+upstream upstream.name {
+{% for server in upstream.server %}
+  server{{server|to_yaml|replace("{ip_host:", "")|replace(", port:", ":")|replace(": ", ":")|replace("}", "")}}
+{% endfor %}{% endfor %}
+
+{% for server in servers  %}
+server {
+server_name {{ server.name }};
+{% if server.ssl_cert is defined %}
+ssl_certificate {{ server.ssl_cert }};
+{% endif %}
+{% if server.ssl_cert_key is defined %}
+ssl_certificate_key {{ server.ssl_cert_key }};
+{% endif %}
+{% if server.port is defined %}
+listen {{ server.port|to_yaml|replace("[", "")|replace("]", ";")}}
+{% endif %}
+{% for locations in server.locations %}
+{% if locations.route is defined %}
+location {{ locations.route }} {
+{% endif %}
+{% if locations.allow is defined %}
+{% if 'standart' in locations.allow %}
+{% for ip in allow_lists %}
+{% if 'standart' in ip.name|string() %}
+{% for item in ip.hosts %}
+allow {{ item }}
+{% endfor %}{% endif %}{% endfor %}
+deny all;
+{% endif %}
+{% if 'vpn' in locations.allow %}
+{% for ip in allow_lists %}
+{% if 'vpn' in ip.name|string() %}
+{% for item in ip.hosts %}
+allow {{ item }}
+{% endfor %}{% endif %}{% endfor %}
+deny all;
+{% endif %}
+{% endif %}
+{% if locations.return is defined %}
+return {{ locations.return }}; 
+{% endif %}
+{% if locations.proxy_pass is defined %}
+proxy_pass {{ locations.proxy_pass }}; 
+{% endif %}
+{% if locations.client_max_body_size is defined %}
+client_max_body_size {{ locations.client_max_body_size }};
+{% endif %}
+{% if locations.gzip is defined %}
+gzip {{ locations.gzip }};
+{% endif %}
+{% if locations.chunked_transfer_encoding is defined %}
+chunked_transfer_encoding {{ locations.chunked_transfer_encoding }};
+{% endif %}
+{% if locations.set_headers is defined %}
+{% for set_headers in locations.set_headers %}
+proxy_set_header {{ set_headers.header }} {{ set_headers.value }};
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+
+
+

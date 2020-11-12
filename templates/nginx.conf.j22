@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+
+#{% for ip in allow_lists %}
+stream {
+# {% for stream in streams  %}
+# {{ stream.name}} {
+    allow: {% for ip in allow_lists if ip.name == standart  %}
+               {{ ip.name }}
+               {{ ip.hosts | to_yaml}}
+           {% endfor %}
+    deny all;
+# {% endfor %}
+  
+
