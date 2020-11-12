@@ -5,4 +5,4 @@
     - name: Creating nginx.conf
       template:
         src: templates/nginx.conf.j2
-        dest: /etc/nginx/nginx2.conf
+        dest: nginx.conf
