@@ -5,4 +5,9 @@
     - name: Creating nginx.conf
       template:
         src: templates/nginx.conf.j2
-        dest: nginx.conf
+        dest: /etc/nginx/conf.d/nginx_ansible.conf
+
+    - name: Restart nginx
+      systemd:
+        name: nginx
+        state: restarted
